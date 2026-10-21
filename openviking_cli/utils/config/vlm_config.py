@@ -179,6 +179,14 @@ class VLMConfig(BaseModel):
         ),
     )
 
+    ca_bundle: Optional[str] = Field(
+        default=None,
+        description=(
+            "Path to a PEM CA bundle used to verify the VLM endpoint's TLS certificate. "
+            "None keeps the process default (SSL_CERT_FILE / certifi)."
+        ),
+    )
+
     provider: Optional[str] = Field(default=None, description="Provider type")
     backend: Optional[str] = Field(
         default=None, description="Backend provider (Deprecated, use 'provider' instead)"
@@ -746,6 +754,9 @@ class VLMConfig(BaseModel):
             "media": self.media.model_dump(),
         }
 
+        if self.ca_bundle:
+            result["ca_bundle"] = self.ca_bundle
+
         if credential.api_key:
             result["api_key"] = credential.api_key
         if credential.forward_api_key is not None:
@@ -781,6 +792,9 @@ class VLMConfig(BaseModel):
             "api_version": self.api_version,
             "media": self.media.model_dump(),
         }
+
+        if self.ca_bundle:
+            result["ca_bundle"] = self.ca_bundle
 
         if config:
             if config.get("api_key"):
