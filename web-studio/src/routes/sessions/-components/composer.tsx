@@ -9,8 +9,10 @@ import {
   MAX_SESSION_IMAGE_BYTES,
   draftImageToPart,
   prepareImageFiles,
-  type DraftImage,
-  type ImagePrepareFailure,
+} from '#/lib/sessions/image-attachments'
+import type {
+  DraftImage,
+  ImagePrepareFailure,
 } from '#/lib/sessions/image-attachments'
 import { cn } from '#/lib/utils'
 
@@ -134,7 +136,7 @@ export function Composer({
 
   const handlePaste = useCallback(
     (e: React.ClipboardEvent) => {
-      const files = Array.from(e.clipboardData?.files ?? []).filter((file) =>
+      const files = Array.from(e.clipboardData.files).filter((file) =>
         file.type.startsWith('image/'),
       )
       if (files.length === 0) return
@@ -148,7 +150,7 @@ export function Composer({
     (e: React.DragEvent) => {
       e.preventDefault()
       setIsDragging(false)
-      const files = Array.from(e.dataTransfer?.files ?? []).filter((file) =>
+      const files = Array.from(e.dataTransfer.files).filter((file) =>
         file.type.startsWith('image/'),
       )
       void addFiles(files)
