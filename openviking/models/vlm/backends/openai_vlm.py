@@ -83,9 +83,12 @@ class OpenAIVLM(VLMBase):
         self.api_version = config.get("api_version")
         self.reasoning_effort = config.get("reasoning_effort")
         self.keepalive_expiry = config.get("keepalive_expiry")
+        self.ca_bundle = config.get("ca_bundle")
 
     def _http_client_kwargs(self) -> Dict[str, Any]:
         kwargs: Dict[str, Any] = {"timeout": self.timeout}
+        if self.ca_bundle:
+            kwargs["verify"] = self.ca_bundle
         if self.keepalive_expiry is not None:
             defaults = openai.DEFAULT_CONNECTION_LIMITS
             kwargs["limits"] = httpx.Limits(
@@ -114,7 +117,9 @@ class OpenAIVLM(VLMBase):
                 client_cls=openai.DefaultHttpxClient,
                 **http_kwargs,
             )
-            if http_client is None and self.keepalive_expiry is not None:
+            if http_client is None and (
+                self.keepalive_expiry is not None or self.ca_bundle
+            ):
                 http_client = openai.DefaultHttpxClient(**http_kwargs)
             if http_client is not None:
                 kwargs["http_client"] = http_client
@@ -142,7 +147,9 @@ class OpenAIVLM(VLMBase):
             client_cls=openai.DefaultAsyncHttpxClient,
             **http_kwargs,
         )
-        if http_client is None and self.keepalive_expiry is not None:
+        if http_client is None and (
+            self.keepalive_expiry is not None or self.ca_bundle
+        ):
             http_client = openai.DefaultAsyncHttpxClient(**http_kwargs)
         if http_client is not None:
             kwargs["http_client"] = http_client
