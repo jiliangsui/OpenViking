@@ -2938,7 +2938,11 @@ class AgentLoop:
             return False
         query_cjk = sum(1 for ch in query if "\u4e00" <= ch <= "\u9fff")
         answer_cjk = sum(1 for ch in answer if "\u4e00" <= ch <= "\u9fff")
-        return query_cjk >= 2 and answer_cjk < 2
+        answer_latin = sum(1 for ch in answer.lower() if "a" <= ch <= "z")
+        total_letters = answer_cjk + answer_latin
+        if query_cjk < 2 or total_letters == 0:
+            return False
+        return answer_cjk / total_letters < 0.15
 
     async def _ensure_answer_language(
         self,

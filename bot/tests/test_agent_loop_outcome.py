@@ -330,7 +330,12 @@ async def test_agent_loop_adds_language_reminder_after_tool_results(make_loop):
 
 def test_needs_language_rewrite_only_for_chinese_question_with_english_answer():
     assert AgentLoop._needs_language_rewrite("这个页面是什么", "This is a page")
+    assert AgentLoop._needs_language_rewrite(
+        "这个页面是什么",
+        "This page is a standard network card management page. 标准网卡.",
+    )
     assert not AgentLoop._needs_language_rewrite("这个页面是什么", "这是一个页面")
+    assert not AgentLoop._needs_language_rewrite("这个页面是什么", "这是一个页面，标准网卡。")
     assert not AgentLoop._needs_language_rewrite("What is this", "This is a page")
 
 
