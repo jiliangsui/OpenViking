@@ -108,6 +108,11 @@ class ImageGenerationTool(Tool):
         """Check if the current model is a Seedream model."""
         return "seedream" in self.gen_image_model.lower()
 
+    @property
+    def _supports_style(self) -> bool:
+        """Only DALL-E 3 accepts ``style``; other models reject it outright."""
+        return "dall-e-3" in self.gen_image_model.lower()
+
     async def _parse_image_data(
         self, image_str: str, tool_context: "ToolContext | None" = None
     ) -> tuple[str, str]:
@@ -230,6 +235,7 @@ class ImageGenerationTool(Tool):
                     size=size,
                     n=n,
                     quality=quality,
+                    include_style=self._supports_style,
                     style=style,
                 )
                 gen_kwargs["prompt"] = prompt
