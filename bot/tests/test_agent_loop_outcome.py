@@ -328,6 +328,28 @@ async def test_agent_loop_adds_language_reminder_after_tool_results(make_loop):
     )
 
 
+def test_needs_language_rewrite_only_for_chinese_question_with_english_answer():
+    assert AgentLoop._needs_language_rewrite("这个页面是什么", "This is a page")
+    assert not AgentLoop._needs_language_rewrite("这个页面是什么", "这是一个页面")
+    assert not AgentLoop._needs_language_rewrite("What is this", "This is a page")
+
+
+@pytest.mark.asyncio
+async def test_agent_loop_rewrites_english_answer_for_chinese_question(make_loop):
+    class _ChineseRewriteProvider(_RecordingProvider):
+        async def chat(self, *args, **kwargs):
+            return LLMResponse(content="这是一个页面。")
+
+    loop = make_loop(provider=_ChineseRewriteProvider())
+    rewritten = await loop._ensure_answer_language(
+        "This is a page.",
+        "这个页面是什么？",
+        SessionKey(type="cli", channel_id="default", chat_id="language-rewrite"),
+    )
+
+    assert rewritten == "这是一个页面。"
+
+
 @pytest.mark.asyncio
 async def test_agent_loop_limits_media_across_parallel_tool_results(make_loop, monkeypatch):
     monkeypatch.setattr(loop_module, "MAX_INLINE_TOOL_RESULT_MEDIA_BYTES", 5)

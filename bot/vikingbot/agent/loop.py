@@ -2821,6 +2821,12 @@ class AgentLoop:
                     active_turn=active_turn,
                 )
 
+            final_content = await self._ensure_answer_language(
+                final_content,
+                msg.content,
+                session_key,
+            )
+
             if auto_memory_tool:
                 tools_used = [auto_memory_tool, *(tools_used or [])]
             active_turn_history = list(active_turn.history_items) if active_turn is not None else []
@@ -2925,6 +2931,57 @@ class AgentLoop:
                 await monitor_task
             except asyncio.CancelledError:
                 pass
+
+    @staticmethod
+    def _needs_language_rewrite(query: str, answer: str) -> bool:
+        if not query or not answer:
+            return False
+        query_cjk = sum(1 for ch in query if "\u4e00" <= ch <= "\u9fff")
+        answer_cjk = sum(1 for ch in answer if "\u4e00" <= ch <= "\u9fff")
+        return query_cjk >= 2 and answer_cjk < 2
+
+    async def _ensure_answer_language(
+        self,
+        answer: str | None,
+        query: str,
+        session_key: SessionKey | None,
+    ) -> str | None:
+        if not isinstance(answer, str) or not self._needs_language_rewrite(query, answer):
+            return answer
+        try:
+            response = await self.provider.chat(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a language normalization step. Rewrite the assistant "
+                            "answer in the same language as the user question. Preserve all "
+                            "code, commands, identifiers, numbers, file paths, and technical "
+                            "terms exactly. Do not add, remove, or change facts. Return only "
+                            "the rewritten answer."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"User question:\n{query}\n\nAssistant answer:\n{answer}\n\n"
+                            "Rewrite the assistant answer in Chinese."
+                        ),
+                    },
+                ],
+                tools=[],
+                model=self.model,
+                temperature=0.0,
+                max_tokens=2048,
+                session_id=session_key.safe_name() if session_key else None,
+            )
+            rewritten = (response.content or "").strip()
+            if rewritten and not self._needs_language_rewrite(query, rewritten):
+                logger.info("[LANGUAGE_REWRITE] rewrote final answer into the user's language")
+                return rewritten
+        except Exception as exc:
+            logger.warning("[LANGUAGE_REWRITE]: rewrite failed: {}", exc)
+        return answer
 
     @staticmethod
     def _build_response_completed_payload(
