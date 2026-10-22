@@ -544,6 +544,14 @@ class AgentsConfig(BaseModel):
         description="Minimum number of latest assistant Steps retained without compaction.",
     )
     gen_image_model: str = "openai/doubao-seedream-4-5-251128"
+    enable_image_tool: bool = Field(
+        default=False,
+        description=(
+            "Register the image generation/editing tool. Only turn this on when the configured "
+            "provider actually serves an image model; with a chat-only endpoint every call to "
+            "the tool fails."
+        ),
+    )
     thinking: bool = Field(
         default=True,
         description="Enable model thinking/reasoning mode for VikingBot agent calls.",

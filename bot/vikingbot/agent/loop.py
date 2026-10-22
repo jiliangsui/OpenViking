@@ -667,8 +667,13 @@ class AgentLoop:
             subagent_manager=self.subagents,
             cron_service=self.cron_service,
             include_spawn_tool=self._subagents_enabled(),
+            include_image_tool=self._image_tool_enabled(),
             include_viking_tools=self.config.ov_server.is_available(),
         )
+
+    def _image_tool_enabled(self) -> bool:
+        agents_config = getattr(self.config, "agents", None)
+        return bool(getattr(agents_config, "enable_image_tool", False))
 
     def _subagents_enabled(self) -> bool:
         agents_config = getattr(self.config, "agents", None)
