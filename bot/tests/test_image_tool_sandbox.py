@@ -137,3 +137,28 @@ async def test_image_tool_saves_generated_jpeg_with_jpg_extension(monkeypatch, t
     assert saved_files[0].suffix == ".jpg"
     assert saved_files[0].read_bytes() == jpeg_bytes
     assert f"send://{saved_files[0].name}" in result
+
+
+@pytest.mark.asyncio
+async def test_image_tool_omits_style_for_models_that_reject_it(monkeypatch, tmp_path):
+    """`style` is DALL-E 3 only: sending it to seedream makes litellm raise
+    UnsupportedParamsError before the request even leaves the process."""
+    monkeypatch.setattr(image_module, "get_data_path", lambda: tmp_path)
+    png_bytes = b"\x89PNG\r\n\x1a\nfake-png"
+    seen = {}
+
+    async def fake_image_generation(**kwargs):
+        seen.clear()
+        seen.update(kwargs)
+        return SimpleNamespace(data=[SimpleNamespace(b64_json=base64.b64encode(png_bytes).decode())])
+
+    monkeypatch.setattr(image_module.litellm, "aimage_generation", fake_image_generation)
+    context = SimpleNamespace(session_key="session", channel_metadata={})
+
+    seedream = ImageGenerationTool(gen_image_model="openai/doubao-seedream-4-5-251128")
+    await seedream.execute(context, mode="generate", prompt="a cat", send_to_user=False)
+    assert "style" not in seen
+
+    dalle = ImageGenerationTool(gen_image_model="openai/dall-e-3")
+    await dalle.execute(context, mode="generate", prompt="a cat", send_to_user=False)
+    assert seen.get("style") == "vivid"
