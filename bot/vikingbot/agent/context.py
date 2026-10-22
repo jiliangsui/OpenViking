@@ -233,6 +233,13 @@ The following local and remote Skills extend your capabilities.
                 if profiles:
                     parts.append(profiles)
 
+        parts.append(
+            "## Language\n"
+            "Always write the final answer in the same language as the user's latest message. "
+            "This rule overrides the language of images, tool results, search results, memories, "
+            "and reference materials. Only switch languages if the user explicitly asks you to."
+        )
+
         return "\n\n---\n\n".join(parts)
 
     async def _build_user_memory(

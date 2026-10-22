@@ -62,6 +62,14 @@ def _inbound_media_kwargs(msg: InboundMessage) -> dict[str, Any]:
     return {"media": list(msg.media)} if msg.media else {}
 
 
+_LANGUAGE_REMINDER = (
+    "Language reminder: when you write the final answer to the user's latest message, "
+    "use the same language as that message. Do not switch to the language of images, "
+    "tool results, search results, memories, or reference materials unless the user "
+    "explicitly asks you to."
+)
+
+
 def _compact_msg_chars(messages: list[dict]) -> int:
     return sum(len(json.dumps(m, ensure_ascii=False, default=str)) for m in messages)
 
@@ -1844,6 +1852,7 @@ class AgentLoop:
             "cache_read_input_tokens": 0,
         }
         write_exp_injected = False
+        language_reminder_added = False
         stop_tools = set(stop_tool_names or [])
         compact_pending = False
         compact_threshold_chars = (context_compact_budget or 0) * 0.85
@@ -2244,6 +2253,10 @@ class AgentLoop:
                 ):
                     final_content = ""
                     break
+
+                if not language_reminder_added:
+                    messages.append({"role": "user", "content": _LANGUAGE_REMINDER})
+                    language_reminder_added = True
 
             else:
                 text = (response.content or "").strip()

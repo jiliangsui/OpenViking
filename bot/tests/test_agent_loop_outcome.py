@@ -310,6 +310,25 @@ async def test_agent_loop_gates_multimodal_result_by_provider(make_loop, support
 
 
 @pytest.mark.asyncio
+async def test_agent_loop_adds_language_reminder_after_tool_results(make_loop):
+    provider = _MediaProvider([[_image_call("call-1")]])
+    loop = make_loop(provider=provider, max_iterations=2)
+
+    final, _reasoning, _tools_used, _usage, _iteration = await loop._run_agent_loop(
+        messages=[{"role": "user", "content": "看看这张图片"}],
+        session_key=SessionKey(type="cli", channel_id="default", chat_id="language-reminder"),
+        publish_events=False,
+        tool_registry=_ImageRegistry(),
+    )
+
+    assert final == "done"
+    assert any(
+        message["role"] == "user" and "Language reminder" in message["content"]
+        for message in provider.calls[1]
+    )
+
+
+@pytest.mark.asyncio
 async def test_agent_loop_limits_media_across_parallel_tool_results(make_loop, monkeypatch):
     monkeypatch.setattr(loop_module, "MAX_INLINE_TOOL_RESULT_MEDIA_BYTES", 5)
 

@@ -2587,6 +2587,8 @@ async def test_context_loads_profiles_for_memory_peers(tmp_path):
     assert "sender profile" in system_prompt
     assert "profile for speaker-a" in system_prompt
     assert "profile for speaker-b" in system_prompt
+    assert "## Language" in system_prompt
+    assert "same language as the user's latest message" in system_prompt
 
 
 @pytest.mark.asyncio
